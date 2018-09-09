@@ -1,0 +1,16 @@
+双层vector
+vector<vector<int>> v;
+	for (int i = 0; i<num; i++) 
+	{
+		long a, b, c;
+		cin >> a >> b >> c;
+		vector<int>temp(3);
+		temp[0] = a;
+		temp[1] = b;
+		temp[2] = c;
+		v.push_back(temp);
+	}
+  比我的三个vector不知道好了多少倍。
+  但是我在做基本方法的时候发现了一件事情：
+  1）如果要对vector进行insert操作，那在最开始定义vector的时候一定要定义一个大小，否则会超出范围。
+  2）C++的list虽然可以pushfront (vector不行） 但是list无法通过下标来获取数据 所以就很痛苦
