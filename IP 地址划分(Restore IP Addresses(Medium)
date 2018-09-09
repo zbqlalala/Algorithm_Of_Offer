@@ -1,0 +1,208 @@
+Given "25525511135",
+return ["255.255.11.135", "255.255.111.35"].
+或者输出有多少种可能的序列
+
+代码一：（JAVA）
+public List<String> restoreIpAddresses(String s) {//执行这个程序即可
+    List<String> addresses = new ArrayList<>();
+    StringBuilder tempAddress = new StringBuilder();
+    doRestore(0, tempAddress, addresses, s);
+    return addresses;
+}
+
+private void doRestore(int k, StringBuilder tempAddress, List<String> addresses, String s) {
+    if (k == 4 || s.length() == 0) {//如果已经有四部分了或者子串s已经为空了 就可以返回了
+        if (k == 4 && s.length() == 0) {
+            addresses.add(tempAddress.toString()); 
+            //不管怎样 只要有一项满足就会返回，但是这个语句的意思是只有在s为空的时候已经有四部分了才可以保留这种分割方式 否则就是错误的 还剩下数字没有被分配
+            //定义一个全局变量这里++即可最后获取总序列数
+        }
+        return;
+    }
+    for (int i = 0; i < s.length() && i <= 2; i++) {
+        if (i != 0 && s.charAt(0) == '0') {//如果这一项是以0做开头肯定不行 注意0本身是可以的 但是01是不行的
+            break;
+        }
+        String part = s.substring(0, i + 1);
+        if (Integer.valueOf(part) <= 255) {//java真是方便啊
+            if (tempAddress.length() != 0) {
+                part = "." + part;
+            }
+            tempAddress.append(part);
+            doRestore(k + 1, tempAddress, addresses, s.substring(i + 1)); //递归
+            tempAddress.delete(tempAddress.length() - part.length(), tempAddress.length());//刚刚那种方式已经试过了 不管行不行就要删掉
+        }
+    }
+}
+思路：递归。从第一个数据开始，把可以放进第一项的放进第一项，后面的交给后面看。一旦遇到不对的情况就跳出。
+#include <iostream>
+#include <vector> //必须包含头文件
+#include <string>
+using namespace std;
+bool check(vector<int> v,int i)
+{ 
+	int sum = 0;
+	int a = v[i], b = v[i + 1], c = v[i + 2];
+	sum = a * 100 + b * 10 + c;
+	if (0<sum<256)
+	{
+		return true;
+	}
+	return false;
+}
+int divide2(vector<int> v, int index1,int index2)
+{
+	int sum = 0;
+	int dif = index2 - index1;
+	if ( dif<7 && dif>1)
+	{
+		if (dif == 6)
+		{
+			if (check(v, index1) && check(v, index2-3))
+				sum++;
+		}
+		else if (dif<7 && dif>3)
+		{
+			if (check(v, index1))
+			{
+				sum++;
+			}
+			if (check(v, index2 - 3))
+			{
+				sum++;
+			}
+			if (dif== 4)
+			{
+				sum++;
+			}
+		}
+		else if (dif == 3 || dif == 2)
+		{
+			sum = dif-1;
+		}
+
+	}
+	return sum;
+}
+
+int main()
+{
+	vector<int>v1;
+	string a;
+	cin >> a;
+	for (int i = 0; i < a.length() ;i++)
+	{
+		int num = 0;
+		num = a[i]-'0';
+		v1.push_back(num);
+	}
+	/*vector<int>::iterator ita; //声明一个迭代器
+	int i = 0;
+	for (ita = v1.begin(), i = 0; ita != v1.end(); i++, ita++)//v1.begin()指向v1的第一个元素，v1.end()指向最后元素的下一位置
+	{
+		cout << "v1中的" << i << "值:" << v1[i] << endl;
+	}*/
+	if (v1.size() == 4 ||v1.size() == 12)
+	{
+		if (v1.size() == 12)
+		{
+			if (check(v1, 0) && check(v1, 3) && check(v1, 6) && check(v1, 9))
+			{
+				cout << 1 << endl;
+				return 0;
+			}
+			else
+			{
+				cout << 0 << endl;
+				return 0;
+			}
+
+		}
+		cout << 1 << endl;
+		return 0;
+	}
+	else 
+	{
+		if (v1.size() < 4 || v1.size()>12)
+		{
+			cout << 0 << endl;
+			return 0;
+		}
+		int bit = v1.size() / 4;
+		//cout << "bit多少位啊"<<bit << endl;
+		if (bit == 2)
+		{
+			int sum2 = 0;//bit为2的情况
+			//中间4~7位能分为几种
+			sum2 += divide2(v1, 2,v1.size()-2); //当前位 后一位
+			//判断左加
+			if (check(v1, 0))
+			{
+				sum2 += divide2(v1, 3, v1.size() - 2);
+			}
+			//判断右加
+			if (check(v1, v1.size()-3))
+			{
+				sum2 += divide2(v1, 2, v1.size() - 1);
+			}
+			//判断都加
+			if (check(v1, 0) && check(v1, v1.size() - 3))
+			{
+				sum2 += divide2(v1, 3, v1.size() - 2);
+			}
+			cout << sum2 << endl;
+			return 0;
+
+		}
+		else if (bit == 1)
+		{
+			int sum1 = 0;//bit为1的情况
+			//中间3~5位能分为几种
+			sum1 += divide2(v1, 1, v1.size() - 1); //当前位 后一位
+			//左加1 
+			sum1 += divide2(v1, 2, v1.size() - 1);
+			//右加1
+			sum1 += divide2(v1, 1, v1.size() - 2);
+			
+			if (v1.size() == 5)//5输出
+			{
+				cout << sum1 << endl;
+				return 0;
+			}
+			//都加1
+			sum1 += (v1.size() - 5);
+			//左加2
+			if (check(v1, 0))
+			{
+				sum1 += (v1.size() - 5);
+				if (v1.size() == 7)
+				{
+					sum1++;
+				}
+			}
+			//右加2
+			if (  check( v1, (v1.size() - 3) )   )
+			{
+				sum1 += (v1.size() - 5);
+				if (v1.size() == 7)
+				{
+					sum1++;
+				}
+			}
+			cout << sum1 << endl;
+			return 0;
+		}
+		else
+		{
+			cout << 0 << endl;
+			return 0;
+		}
+	}
+}
+代码二：（C++，前两个函数可参考，主程序忽略。思想复杂且不完善）
+
+思路：动态规划的思路，目标是要分成四组，首先大分成两组。然后这两个小组就只剩下2~6个单词需要小分割，就变的简单很多。可以完全遍历。
+1）大分割成两小组的思路：输入序列是4~12个长度，假设长度为size，则要分割的点的下标必定满足：大于1;小于size-2;大于size-6;小于5.
+2）基于上述四条判断大分割成两个小组，对每种大分割方式：对两个小组再进行小分割，左小组的小分割方式为a种，右小组的小分割方式为b种。则该大分割方式为a*b种。
+3）将所有大分割方式下所有序列的可能性算出来，再累加。
+ 我的代码的方式走偏了，针对size/4得到的商re,左边留re个数，右边留re个数。再进行左加右加操作。错误的原因是还需要左减右减。
