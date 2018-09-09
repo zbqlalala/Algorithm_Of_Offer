@@ -1,0 +1,46 @@
+/////////////////map添入元素
+(1)利用pair
+map<int,string>ma;
+ma.insert(pair<int,string>(2,"LiMing"));
+或者ma.insert(make_pair(2,"LiMing"));
+
+(2)利用map的value_type
+map<int,string>ma;
+ma.insert(map<int,string>::value_type(2,"LiMing"));
+
+(3)利用数组
+map<int,string>ma;
+ma[2] = "LiMing";
+
+map<string,int>s;
+str = "LiMing";
+s[str] = 2;
+另外,key值相同的时候无法添加到map中;
+如果value对应的key值需要更新的时候,yua需要先获取value值,然后删去元素key,value对应元素,再重新插入新key,value对应的元素.
+如果key对应的value值需要更新,可以直接赋值或操作,比如s[str] = 3;或者s[str]++;
+
+////////////map删除元素
+移除某个map中某个条目用erase()
+该成员方法的定义如下
+(1)iterator erase(iterator it); //通过一个条目对象删除
+(2)iterator erase(iterator first, iterator last);//删除一个范围
+(3)size_type erase(const Key& key); //通过关键字删除
+(4)map的清空函数clear()就相当于 enumMap.erase(enumMap.begin(), enumMap.end());
+
+//////////////map查找元素
+(1)用count函数来判定关键字是否出现，其缺点是无法定位数据出现位置,由于map的特性，一对一的映射关系，就决定了count函数的返回值只有两个，要么是0，要么是1，出现的情况，当然是返回1了
+
+(2)用find函数来定位数据出现位置，它返回数据所在位置的迭代器，如果map中没有要查找的数据，它返回的迭代器等于end函数返回的迭代器.
+
+//////////////map的遍历
+(1)前序遍历
+map<int,string>ma;
+map<int,string>::iterator na;
+for (na = ma.begin(); na != ma.end(); na++)
+cout << na->first << " " << na->second << endl;
+
+(2)后序遍历
+map<int,string>ma;
+map<int,string>::reverse_iterator na;
+for (na = ma.rbegin(); na != ma.rend(); na++)
+cout << na->first << " " << na->second << endl;map<int,string>ma
