@@ -1,0 +1,66 @@
+#include <iostream>
+#include <string>
+//#include <algorithm>
+using namespace std;
+int print(string str,int num,string &return_str)//这里用引用 所以直接在main函数里就可以返回我们需要的东西。
+//而这个函数返回int 也就是下标该更新的量 用来继续走下标
+{
+	string sub_str;
+	int count = 0;
+	//int index = 0;
+	int i = 0;
+	while(i<=str.size())  //string 用.length    char*用strlen()
+	{
+		if (str[i] - '0' <= 9 && str[i] - '0' >= 0)
+		{					
+			count = 10 * count + (str[i] - '0');
+			cout << "遇到数字了 " << count << endl;
+			i++;
+			
+		}else if (str[i]=='[')//碰到 [ 就调用print 
+		{ 		
+			i++;
+			cout << "遇到 [ 了" << endl;
+			int skip=print(str.substr(i), count,return_str);
+			i += skip;
+			count = 0;
+			
+		}
+		else if (str[i] == ']')//碰到 ] 就返回
+		{		
+			cout << "遇到 ] 了" << endl;
+			string temp = sub_str+return_str;
+			return_str = "";
+			for (int j = 0; j < num; j++)
+			{
+				return_str += temp;				
+			}
+			cout << "这次的字符串是" << return_str << endl;
+			i++;
+			break;
+			
+		}
+		else//碰到字母就相加
+		{	
+			cout << "遇到字母了 " <<str[i]<< endl;
+			sub_str += str[i];		
+			i++;
+		}
+	}
+	cout << "这次输出是" << i <<endl;
+	return i;
+}
+int main()
+{
+	string a;
+	string pout;
+	cin >> a;
+//	cout << a.size();
+	print(a, 1,pout);
+	cout << pout << endl;
+	return 0;
+}
+
+PS：还有一些问题，比如1[ds45[df]ds]会输出dsdsdfdfdfdfdfdfdfdfdffdfdfdfdfdfdfdfdfdfdfdf。。。 这说明中间的sub_str有点问题（或是别的？）
+但暂时没有改的必要。最起码我已经解决了这种个对字符串进行操作，然后对中间的下标进行更新这种主要问题了。
+说明：输出的string用引用，函数本身返回下标的更新值。
