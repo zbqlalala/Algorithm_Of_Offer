@@ -1,0 +1,12 @@
+string转int 再转成vector
+char转成int 
+
+  vector<int>v1;
+	string a;
+	cin >> a;
+	for (int i = 0; i < a.length() ;i++)   //string 用.length    char*用strlen()
+	{
+		int num = 0;
+		num = a[i]-'0';//从char转成int
+		v1.push_back(num);
+	}
