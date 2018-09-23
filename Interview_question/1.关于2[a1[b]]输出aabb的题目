@@ -21,7 +21,7 @@ int print(string str,int num,string &return_str)//这里用引用 所以直接�
 		{ 		
 			i++;
 			cout << "遇到 [ 了" << endl;
-			int skip=print(str.substr(i), count,return_str);
+			int skip=print(str.substr(i), count,return_str);//这里更新下标
 			i += skip;
 			count = 0;
 			
