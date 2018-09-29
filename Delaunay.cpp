@@ -1,26 +1,29 @@
 #include<opencv2/imgproc/imgproc_c.h>
 #include<opencv2/legacy/legacy.hpp>
-#include"opencv2/highgui/highgui.hpp"
-#include<opencv2/opencv.hpp>  
-#include<iostream>  
+#include<opencv2/highgui/highgui.hpp>
+#include<opencv2/opencv.hpp>  
+#include<iostream>  
 #include<stdio.h>
+#include<typeinfo>
+#include<map>
 using namespace std;
 using namespace cv;
 
 static void help(void)
 {
-	printf("\n This program demostrates iterative construction of\n"//这个程序阐述了delaunay剖分和voronoi细分的迭代构造  
+	printf("\n This program demostrates iterative construction of\n"
+	//这个程序阐述了delaunay剖分和voronoi细分的迭代构造  
 		"delaunay triangulation and voronoi tesselation.\n"
-		"It draws a random set of points in an image and then delaunay triangulates them.\n"//在图像上画出一些随机点，然后进行delaunay三角剖分  
-		"\nThis program builds the traingulation interactively, you may stop this process by\n"
-		"hitting any key.\n");//迭代构造三角剖分，如果像停止，则按任意键  
+		"It draws a random set of points in an image and then delaunay triangulates them.\n"//在图像上画出一些随机点，然后进行delaunay三角剖分  
+		"\nThis program builds the traingulation interactively, you may stop this process by\n"
+		"hitting any key.\n");//迭代构造三角剖分，如果像停止，则按任意键  
 }
-
-static CvSubdiv2D* init_delaunay(CvMemStorage* storage,//初始化三角剖分结构，为其分配单元  
-	CvRect rect)
+//初始化三角剖分结构，为其分配单元 
+static CvSubdiv2D* init_delaunay(CvMemStorage* storage,	CvRect rect)
 {
-	CvSubdiv2D* subdiv;//三角剖分的数据单元  
-    subdiv = cvCreateSubdiv2D(CV_SEQ_KIND_SUBDIV2D, sizeof(*subdiv),
+	CvSubdiv2D* subdiv;
+	//三角剖分的数据单元  
+        subdiv = cvCreateSubdiv2D(CV_SEQ_KIND_SUBDIV2D, sizeof(*subdiv),
 		sizeof(CvSubdiv2DPoint),
 		sizeof(CvQuadEdge2D),
 		storage);
@@ -29,25 +32,28 @@ static CvSubdiv2D* init_delaunay(CvMemStorage* storage,//初始化三角剖分�
 	return subdiv;
 }
 
-
-static void draw_subdiv_point(IplImage* img, CvPoint2D32f fp, CvScalar color )//画出三角剖分的顶点  
+//画出三角剖分的顶点  
+static void draw_subdiv_point(IplImage* img, CvPoint2D32f fp, CvScalar color )
 {
 	cvCircle(img, cvPoint(cvRound(fp.x), cvRound(fp.y)), 5, color, CV_FILLED, 8, 0);
 }
 
-
-static void draw_subdiv_edge(IplImage* img, CvSubdiv2DEdge edge, CvScalar color )//画出三角剖分的边  
+//画出三角剖分的边
+static void draw_subdiv_edge(IplImage* img, CvSubdiv2DEdge edge, CvScalar color )  
 {
-	CvSubdiv2DPoint* org_pt;//源顶点  
-	CvSubdiv2DPoint* dst_pt;//目地顶点  
+  //源顶点
+	CvSubdiv2DPoint* org_pt;  
+	CvSubdiv2DPoint* dst_pt;
+	//目地顶点
 	CvPoint2D32f org;
 	CvPoint2D32f dst;
 	CvPoint iorg, idst;
-
-	org_pt = cvSubdiv2DEdgeOrg(edge);//通过边获取顶点  
+//通过边获取顶点 
+	org_pt = cvSubdiv2DEdgeOrg(edge); 
 	dst_pt = cvSubdiv2DEdgeDst(edge);
 
-	if (org_pt && dst_pt )//如果两个端点不为空  
+	//如果两个端点不为空  
+	if (org_pt && dst_pt )
 	{
 		org = org_pt->pt;
 		dst = dst_pt->pt;
@@ -61,22 +67,25 @@ static void draw_subdiv_edge(IplImage* img, CvSubdiv2DEdge edge, CvScalar color 
 
 
 static void draw_subdiv(IplImage* img, CvSubdiv2D* subdiv,
-	CvScalar delaunay_color)//画出剖分和细分  
+	CvScalar delaunay_color)//画出剖分和细分  
 {
 	CvSeqReader reader;
-	int i, total = subdiv->edges->total;//边的数量  
-	int elem_size = subdiv->edges->elem_size;//边的大小  
-	cout << typeid(subdiv->edges).name() << endl;
+	int total = subdiv->edges->total;
+	//边的数量  
+	int elem_size = subdiv->edges->elem_size;
+	//边的大小  
+	//cout << typeid(subdiv->edges).name() << endl;
 
-	cvStartReadSeq((CvSeq*)(subdiv->edges), &reader, 0);//使用CvSeqReader遍历Delaunay或者Voronoi边  
+	cvStartReadSeq((CvSeq*)(subdiv->edges), &reader, 0);
+	//使用CvSeqReader遍历Delaunay或者Voronoi边  
 
-	for (i = 0; i< total; i++)
+	for (int i = 0; i< total; i++)
 	{
 		CvQuadEdge2D* edge= (CvQuadEdge2D*)(reader.ptr);
 
 		if(CV_IS_SET_ELEM(edge))
 		{
-			// draw_subdiv_edge( img, (CvSubdiv2DEdge)edge + 1, voronoi_color );  
+			// draw_subdiv_edge( img, (CvSubdiv2DEdge)edge + 1, voronoi_color );  
 			draw_subdiv_edge(img, (CvSubdiv2DEdge)edge, delaunay_color );
 		}
 		CV_NEXT_SEQ_ELEM(elem_size, reader);
@@ -84,8 +93,36 @@ static void draw_subdiv(IplImage* img, CvSubdiv2D* subdiv,
 
 }
 
+//遍历并保存
+static void traversing(IplImage* img, CvSubdiv2D* subdiv,
+	CvScalar delaunay_color)  
+{
+	CvSeqReader reader;
+	int total = subdiv->edges->total;
+	//边的数量  
+	int elem_size = subdiv->edges->elem_size;
+	//边的大小  
+	cout << typeid(subdiv->edges).name() << endl;
 
-static void locate_point(CvSubdiv2D* subdiv, CvPoint2D32f fp, IplImage* img,//遍历三角剖分的边  
+	cvStartReadSeq((CvSeq*)(subdiv->edges), &reader, 0);
+	//使用CvSeqReader遍历Delaunay或者Voronoi边  
+
+	for (int i = 0; i< total; i++)
+	{
+		CvQuadEdge2D* edge= (CvQuadEdge2D*)(reader.ptr);
+
+		if(CV_IS_SET_ELEM(edge))
+		{
+			// draw_subdiv_edge( img, (CvSubdiv2DEdge)edge + 1, voronoi_color );  
+			draw_subdiv_edge(img, (CvSubdiv2DEdge)edge, delaunay_color );
+		}
+		CV_NEXT_SEQ_ELEM(elem_size, reader);
+	}
+
+}
+
+//遍历三角剖分的边  我感觉好像是vronin的东西．
+static void locate_point(CvSubdiv2D* subdiv, CvPoint2D32f fp, IplImage* img,
 	CvScalar active_color )
 {
 	CvSubdiv2DEdge e;
@@ -93,7 +130,7 @@ static void locate_point(CvSubdiv2D* subdiv, CvPoint2D32f fp, IplImage* img,//�
 	CvSubdiv2DPoint* p = 0;
 
 	cvSubdiv2DLocate(subdiv, fp, &e0, &p );
-
+//我感觉和另外一个语句意思一样　都是找到fp所在的三角形的首边的代号　存到e0当中　　
 	if (e0)
 	{
 		e = e0;
@@ -101,6 +138,8 @@ static void locate_point(CvSubdiv2D* subdiv, CvPoint2D32f fp, IplImage* img,//�
 		{
 			draw_subdiv_edge(img, e, active_color);
 			e = cvSubdiv2DGetEdge(e, CV_NEXT_AROUND_LEFT);
+			//这个和另外一个语句都代表着　返回下一条边的代号　直到找到所有的边并标注出来
+			//e=subdiv.getEdge(e,CV_NEXT_AROUND_LEFT)
 		}
 		while (e!= e0 );
 	}
@@ -108,8 +147,9 @@ static void locate_point(CvSubdiv2D* subdiv, CvPoint2D32f fp, IplImage* img,//�
 	draw_subdiv_point(img, fp, active_color );
 }
 
-//@author andme-单目视觉  
-void dashLine(Mat &img, Point2d& pt1, Point2d& pt2, int n)//n为虚线段数  
+//@author andme-单目视觉  
+//n为虚线段数  
+void dashLine(Mat &img, Point2d& pt1, Point2d& pt2, int n)
 {
 	Point sub = pt2 - pt1;
 	for (int i= 0; i < 2 * n; i += 2)
@@ -118,40 +158,40 @@ void dashLine(Mat &img, Point2d& pt1, Point2d& pt2, int n)//n为虚线段数  
 	}
 }
 
-//调用形式draw_subdiv_facet( img, cvSubdiv2DRotateEdge( e, 1 ));  
-static void draw_subdiv_facet(IplImage* img, CvSubdiv2DEdge edge )//画出voronoi面   
+//调用形式draw_subdiv_facet( img, cvSubdiv2DRotateEdge( e, 1 ));  
+static void draw_subdiv_facet(IplImage* img, CvSubdiv2DEdge edge )//画出voronoi面   
 {
-	//cout<<edge<<endl;//edge低两位表示表示索引，高位表示四方边缘指针。  
-	//cout<<(edge&3)<<endl;  
-	CvSubdiv2DEdge t = edge;//当我们按上面的调用形式时，edge为eRot。  
+	//cout<<edge<<endl;//edge低两位表示表示索引，高位表示四方边缘指针。  
+	//cout<<(edge&3)<<endl;  
+	CvSubdiv2DEdge t = edge;//当我们按上面的调用形式时，edge为eRot。  
 	int i, count = 0;
 	CvPoint* buf = 0;
 	Point2d *buf1 = 0;
 
-	// count number of edges in facet //面内边的计数  
+	// count number of edges in facet //面内边的计数  
 	do
 	{
 		count++;
 		t = cvSubdiv2DGetEdge(t, CV_NEXT_AROUND_LEFT );
-	}while(t != edge );//我们绕着一个voronoi单元一周，遍历该vornonoi边缘所拥有的边缘数。  
+	}while(t != edge );//我们绕着一个voronoi单元一周，遍历该vornonoi边缘所拥有的边缘数。  
 
 	buf= (CvPoint*)malloc(count*sizeof(buf[0]));
 	buf1 = (Point2d*)malloc(count*sizeof(buf1[0]));
 
-	// gather points  
+	// gather points  
 	t= edge;
 	for (i= 0; i< count; i++)
 	{
-		CvSubdiv2DPoint*pt = cvSubdiv2DEdgeOrg(t);//第一次获取eRot边缘的起始点  
-		if (!pt )break;//如果得不到该源点，则退出循环  
-		buf[i] = cvPoint(cvRound(pt->pt.x), cvRound(pt->pt.y));//将该点转换为cvPoint类型点，存储在buf中  
-		t = cvSubdiv2DGetEdge(t, CV_NEXT_AROUND_LEFT);//然后绕着vornonoi单元，左旋转。  
+		CvSubdiv2DPoint*pt = cvSubdiv2DEdgeOrg(t);//第一次获取eRot边缘的起始点  
+		if (!pt )break;//如果得不到该源点，则退出循环  
+		buf[i] = cvPoint(cvRound(pt->pt.x), cvRound(pt->pt.y));//将该点转换为cvPoint类型点，存储在buf中  
+		t = cvSubdiv2DGetEdge(t, CV_NEXT_AROUND_LEFT);//然后绕着vornonoi单元，左旋转。  
 	}
 
-	if (i == count )//如果所有的点都存储起来了。  
+	if (i == count )//如果所有的点都存储起来了。  
 	{
-		CvSubdiv2DPoint* pt = cvSubdiv2DEdgeDst(cvSubdiv2DRotateEdge(edge, 1));//这里eRot的旋转边缘应该是reversed e,那么目的点，就是e的源点。  
-		// cvFillConvexPoly( img, buf, count, CV_RGB(rand()&255,rand()&255,rand()&255), CV_AA, 0 );//填充凸多边形  
+		CvSubdiv2DPoint* pt = cvSubdiv2DEdgeDst(cvSubdiv2DRotateEdge(edge, 1));//这里eRot的旋转边缘应该是reversed e,那么目的点，就是e的源点。  
+		// cvFillConvexPoly( img, buf, count, CV_RGB(rand()&255,rand()&255,rand()&255), CV_AA, 0 );//填充凸多边形  
 		for (i = 0; i<count; i++)
 		{
 			buf1[i].x = buf[i].x;
@@ -159,22 +199,22 @@ static void draw_subdiv_facet(IplImage* img, CvSubdiv2DEdge edge )//画出vorono
 		}
 		Mat mat_img(img);
 
-		cvPolyLine(img, &buf, &count, 1, 1, CV_RGB(0, 200, 0), 1, CV_AA, 0);//画出线。  
-		//for(int i=0;i<count-1;i++)  
-		//{  
-		//dashLine(mat_img,buf1[i],buf1[i+1],100);  
-		//}  
-		//dashLine(mat_img,buf1[i],buf1[0],100);  
-		draw_subdiv_point(img, pt->pt, CV_RGB(255, 0, 0));//用黑色画出画出剖分顶点。  
+		cvPolyLine(img, &buf, &count, 1, 1, CV_RGB(0, 200, 0), 1, CV_AA, 0);//画出线。  
+		//for(int i=0;i<count-1;i++)  
+		//{  
+		//dashLine(mat_img,buf1[i],buf1[i+1],100);  
+		//}  
+		//dashLine(mat_img,buf1[i],buf1[0],100);  
+		draw_subdiv_point(img, pt->pt, CV_RGB(255, 0, 0));//用黑色画出画出剖分顶点。  
 	}
 	free(buf );
 }
-
-static void paint_voronoi(CvSubdiv2D* subdiv, IplImage* img)//画出voronoi面  
+//画出voronoi面 
+static void paint_voronoi(CvSubdiv2D* subdiv, IplImage* img) 
 {
 	CvSeqReader reader;
-	int i, total = subdiv->edges->total;//边缘总数  
-	int elem_size = subdiv->edges->elem_size;//边缘的大小  
+	int i, total = subdiv->edges->total;//边缘总数  
+	int elem_size = subdiv->edges->elem_size;//边缘的大小  
 
 	cvCalcSubdivVoronoi2D(subdiv);
 
@@ -182,18 +222,23 @@ static void paint_voronoi(CvSubdiv2D* subdiv, IplImage* img)//画出voronoi面 
 
 	for (i = 0; i< total; i++)
 	{
-		CvQuadEdge2D* edge = (CvQuadEdge2D*)(reader.ptr);//获取四方边缘  
-		if( CV_IS_SET_ELEM(edge) )//判断边缘是否在边缘集中  
+		CvQuadEdge2D* edge = (CvQuadEdge2D*)(reader.ptr);
+		//获取四方边缘  
+		if( CV_IS_SET_ELEM(edge) )//判断边缘是否在边缘集中  
 		{
-			CvSubdiv2DEdge e = (CvSubdiv2DEdge)edge;//edge是四方边缘的指针，而CvSubdiv2DEdge高位表示四方边缘的指针。  
-			//cout<<(e&3)<<endl;//通过测试e低2位即索引值应该设置为0了，即输入边缘  
-			// left  
-			draw_subdiv_facet(img,cvSubdiv2DRotateEdge(e,1));//e为Delaunay边，获得Delaunay边对应的voronoi边，即e的旋转边缘  
+			CvSubdiv2DEdge e = (CvSubdiv2DEdge)edge;
+			//edge是四方边缘的指针，而CvSubdiv2DEdge高位表示四方边缘的指针。  
+			//cout<<(e&3)<<endl;//通过测试e低2位即索引值应该设置为0了，即输入边缘  
+			// left  
+			draw_subdiv_facet(img,cvSubdiv2DRotateEdge(e,1));
+			//e为Delaunay边，获得Delaunay边对应的voronoi边，即e的旋转边缘  
 
-			// right  
-			draw_subdiv_facet(img, cvSubdiv2DRotateEdge(e, 3));//反向的旋转边缘  
+			// right  
+			draw_subdiv_facet(img, cvSubdiv2DRotateEdge(e, 3));
+			//反向的旋转边缘  
 		}
-		CV_NEXT_SEQ_ELEM(elem_size, reader);//移动到下一个位置  
+		CV_NEXT_SEQ_ELEM(elem_size, reader);
+		//移动到下一个位置  
 	}
 }
 
@@ -202,60 +247,147 @@ static void run(void)
 {
 	char win[] = "source";
 	int i;
+	//rect有用？　init_delaunay要用
 	CvRect rect  = { 0, 0, 1200, 1200 };
+	
+	//这两个也有用
 	CvMemStorage* storage;
 	CvSubdiv2D* subdiv;
+	
 	IplImage* img;
 	CvScalar active_facet_color, delaunay_color, bkgnd_color;
 	//CvScalar  voronoi_color;
 
-	active_facet_color = CV_RGB(255, 0, 0);//红色  
-	delaunay_color = CV_RGB(0, 0, 0);//黑色  
-	//voronoi_color = CV_RGB(0, 180, 0);//绿色  
-	bkgnd_color = CV_RGB(255, 255, 255);//白色  
+	active_facet_color = CV_RGB(255, 0, 0);//红色  
+	delaunay_color = CV_RGB(0, 0, 0);//黑色  
+	//voronoi_color = CV_RGB(0, 180, 0);//绿色  
+	bkgnd_color = CV_RGB(255, 255, 255);//白色  
 
 	img  = cvCreateImage(cvSize(rect.width, rect.height), 8, 3);
 	cvSet(img, bkgnd_color, 0);
 
 	cvNamedWindow(win, 1);
 
+	//初始化？　为什么需要rect??? subdiv需要rect吗？
 	storage = cvCreateMemStorage(0);
 	subdiv  = init_delaunay(storage, rect );
 
-	printf("Delaunay triangulation will be build now interactively.\n"
-		"To stop the process, press any key\n\n");
+	printf("Delaunay triangulation will be build now interactively.\n"
+		"To stop the process, press any key\n\n");
 
 	vector<CvPoint2D32f> points;
+	map<float,int> pIdMap;
+	map<float,int>::iterator itpID1=pIdMap.begin(),itpID2=pIdMap.begin();
 	for (i  = 0; i < 5; i++)
 	{
-		CvPoint2D32f fp = cvPoint2D32f((float)(rand() % (rect.width - 10)),//使点约束在距离边框10像素之内。  
-			(float)(rand() % (rect.height - 10)));
+	        //使点约束在距离边框10像素之内
+	        CvPoint2D32f fp = cvPoint2D32f((float)(rand() % (rect.width - 10)),(float)(rand() % (rect.height - 10)));
 		points.push_back(fp);
-
-		//locate_point(subdiv, fp, img, active_facet_color);//定位点的位置，并画出点所在voronoi面的边。  
-		cvShowImage(win, img);//刷新显示  
+                pIdMap.insert(make_pair(fp.x,i));
+		//locate_point(subdiv, fp, img, active_facet_color);//定位点的位置，并画出点所在voronoi面的边。  
+		cvShowImage(win, img);
+		//刷新显示  
 
 		if (cvWaitKey(100) >= 0)
 			break;
 
-		cvSubdivDelaunay2DInsert(subdiv, fp);//向三角剖分中插入该点，即对该点进行三角剖分  
-		//cvCalcSubdivVoronoi2D(subdiv);//计算Voronoi细分，有时候我们不需要  
-		cvSet(img, bkgnd_color, 0);//设置图像的背景颜色为白色  
+		cvSubdivDelaunay2DInsert(subdiv, fp);
+		//向三角剖分中插入该点，即对该点进行三角剖分  
+		//cvCalcSubdivVoronoi2D(subdiv);//计算Voronoi细分，有时候我们不需要  
+		cvSet(img, bkgnd_color, 0);//设置图像的背景颜色为白色  
 		draw_subdiv(img, subdiv, delaunay_color);
 		cvShowImage(win, img);
 
-		//cvWaitKey();  
+		//cvWaitKey();  
 		if (cvWaitKey(100) >= 0)
 			break;
 	}
+	for (itpID1 = pIdMap.begin(); itpID1 != pIdMap.end(); itpID1++)
+	{  cout << "start     "<<itpID1->first << " " << itpID1->second << endl; }
+
+	vector< vector<int> > pIdNeighbor;
+	
+	//这样的话　只有一个点　没有另一个点
+         //for (int i = 0; i<points.size(); i++)
+	//原本想从整个序列遍历的　但是那样的话就没有ID数了．
+	{
+              CvSeqReader reader;
+	      int total = subdiv->edges->total;
+	      //边的数量  
+	      
+	      int elem_size = subdiv->edges->elem_size;
+	      //边的大小 
+
+	      cvStartReadSeq((CvSeq*)(subdiv->edges), &reader, 0);
+	      //使用CvSeqReader遍历Delaunay或者Voronoi边  
+
+	      for (int i = 0; i< total; i++)
+	      {
+		      CvQuadEdge2D* edge= (CvQuadEdge2D*)(reader.ptr);
+
+		      if(CV_IS_SET_ELEM(edge))
+		      {
+			     // draw_subdiv_edge( img, (CvSubdiv2DEdge)edge + 1, voronoi_color );  
+			     // draw_subdiv_edge(img, (CvSubdiv2DEdge)edge, delaunay_color 
+			    //我把draw_subdiv_edge的内容搬过来了
+			    CvSubdiv2DPoint* org_pt;
+			    CvSubdiv2DPoint* dst_pt;
+					   
+			    org_pt = cvSubdiv2DEdgeOrg((CvSubdiv2DEdge)edge); 
+			    dst_pt = cvSubdiv2DEdgeDst((CvSubdiv2DEdge)edge);
+			        
+			    //目地顶点
+			    CvPoint2D32f org;
+			    CvPoint2D32f dst;
+			    CvPoint iorg, idst;
+		            //通过边获取顶点  CvPoint画画用
+			   
+			    //如果两个端点不为空  
+			    if (org_pt && dst_pt )
+			    {
+				 org = org_pt->pt;
+				 dst = dst_pt->pt;
+				 cout<<"org.x  "<<org.x<<"  dst.x  "<<dst.x<<endl;
+                                 itpID1=pIdMap.find(org.x);
+				 itpID2=pIdMap.find(dst.x);
+				  cout<<"itpID1->first  "<<itpID1->second<<"  itpID2->first  "<<itpID2->second<<endl;
+				 if(itpID1!=pIdMap.end()&&itpID2!=pIdMap.end())
+				 {
+				   int IDtemp1=itpID1->second;
+				   int IDtemp2=itpID2->second;
+				   cout<<"IDtemp1  "<<IDtemp1<<"  IDtemp2  "<<IDtemp2<<endl;
+				   vector<int> vtemp;
+				   vtemp.push_back(IDtemp1);
+				   vtemp.push_back(IDtemp2);
+				   pIdNeighbor.push_back(vtemp);
+				  
+				 }			   
+			    }		      
+		      }
+		      //这一条边遍历结束　我们走向下一条边
+		      CV_NEXT_SEQ_ELEM(elem_size, reader);
+	      }
+	      //for循环　对所有边的遍历结束
+	}
+	//存储ＩＤ数结束
+	cout<<"the size is"<<pIdNeighbor.size();
+	for(vector< vector<int> >::iterator it=pIdNeighbor.begin();it!=pIdNeighbor.end();++it)
+	{
+	  for(int i=0;i<(*it).size();++i)
+	  {
+	    cout<<(*it)[i]<<" ";
+	  }
+	  cout<<endl;
+	}
+	//画线
 	for (int i = 0; i<points.size(); i++)
 		draw_subdiv_point(img, points[i], active_facet_color);
 	cvShowImage(win, img);
 	cvWaitKey();
 
-	//  cvSet( img, bkgnd_color, 0 );//重新刷新画布，即设置背景颜色为白色  
-	// paint_voronoi(subdiv, img);//画出细分  
-	cvShowImage(win, img );//  
+	//  cvSet( img, bkgnd_color, 0 );//重新刷新画布，即设置背景颜色为白色  
+	// paint_voronoi(subdiv, img);//画出细分  
+	cvShowImage(win, img );//  
 
 	cvWaitKey(0);
 
