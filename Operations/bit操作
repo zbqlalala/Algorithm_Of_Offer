@@ -1,0 +1,3 @@
+unsigned int n;
+int a=(1&n);判断n的最低位是不是１
+n >>= 1;//n右移一位
