@@ -96,7 +96,15 @@ cout << "v1中的" << i << "值:" << v1[i] << endl;
 cout << endl;
 
 v1.clear(); //清空
-
-
+//补充　查找元素
+vector <int>::iterator iElement = find(vecIntegerArray.begin(),
+	                       vecIntegerArray.end(),3);
+	 if( iElement != vecIntegerArray.end() )
+	 {
+	      int nPosition = distance(vecIntegerArray.begin(),iElement);
+		  cout << "Value  "<< *iElement;
+		  cout <<"  find in the vector at position: " <<nPosition + 1 <<endl;
+	 }
+   
 system("pause");
 return 0;
